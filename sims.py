@@ -4,7 +4,7 @@
 import msprime 
 import numpy as np
 import useful
-
+from scipy.stats import bernoulli
 import pandas as pd
 
 def history_archaic(gen_time, len_seq, rr,mu, n_e, t,  n, rand_sd, n_neand, t_neand_samples, n_eu, n_eu_growth, t_eu_growth, n_eu_bottleneck, gr_rt, p_admix,ploid ):
@@ -400,6 +400,47 @@ def make_ancestral_fasta(prefix, ts_mas, len_sequence):
                     if len(s)==100 and j<len_sequence-10:
                         f.write(s+'\n')
                         s=''
+
+
+def create_obs_txt_coverage(file, ploidy, n_diplo, ts, n_ref_pop, n_neanderthal, n, cov):
+    N_neanderthal, n_eu, n, N_ref_pop =ploidy*n_neanderthal, ploidy * n_diplo, ploidy*n, ploidy* n_ref_pop
+    
+    with open(file, 'w') as f:
+        f.write('#POSITIONS\t#REF\t#ALT\tANCESTRAL\t#OUTGROUP\t#ARCHAIC\t#OBSERVATIONS\n')
+        for v in ts.variants():
+            outgroup= str(list(set(v.genotypes[n_eu :( n_eu+N_ref_pop)]))).replace('[','').replace(']','').replace(' ','')
+
+
+            if bernoulli.rvs(cov, size=1)[0]==1:
+                archaic= str(list(set(v.genotypes[n_eu+n :( n_eu+n+N_neanderthal)]))).replace('[','').replace(']','').replace(' ','')
+            else:
+                
+                archaic = '.'
+   
+            obs=''
+            for i in v.genotypes[0 :n_eu]:
+                obs+=str(i)+' '
+                
+            flag=[]
+            
+            for o in v.genotypes[0 :n_eu]:
+                if archaic != '.':
+
+                    if (str(o) in outgroup) and  (str(o) in archaic):
+                        flag.append(True)
+                else:
+                    if (str(o) in outgroup):
+                        flag.append(True)
+            if flag==[True for o in v.genotypes[0 :n_eu]] :
+                
+                pass
+            else:
+            
+    
+                f.write(str(int(v.site.position))+'\t'+str(v.alleles[0])+'\t'+
+                        str(v.alleles[1]) + '\t'+ str(list(v.alleles).index(v.site.ancestral_state))+'\t' +
+                        outgroup+'\t'+archaic+'\t'+str(obs)+'\n')    
+
 
 
 
